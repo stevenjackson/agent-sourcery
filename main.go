@@ -1,25 +1,27 @@
 package main
 
 import (
+	"encoding/json"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 type EngagementProposed struct {
-	Client             string
+	ClientName         string
 	RequiredSkills     []string
 	AgentCount         int
 	ClientServicesLead string
 }
 
 type EngagementStarted struct {
-	StartDate string
-	Client    string
+	StartDate  string
+	ClientName string
 }
 
 type EngagementEnded struct {
-	EndDate string
-	Client  string
+	EndDate    string
+	ClientName string
 }
 
 type FTOUsed struct {
@@ -92,4 +94,24 @@ func main() {
 	}
 
 	db.AutoMigrate(&Event{})
+}
+
+// Projections
+type Engagement struct {
+}
+
+func ClientHistory(db *gorm.DB, agentName string) []string {
+	var events []Event
+	db.Find(&events)
+	var clientNames []string
+
+	for _, event := range events {
+		switch event.EventType {
+		case "AssignmentStarted":
+			var as AssignmentStarted
+			json.Unmarshal([]byte(event.Data), &as)
+			clientNames = append(clientNames, as.ClientName)
+		}
+	}
+	return clientNames
 }
